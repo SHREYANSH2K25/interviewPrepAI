@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Sparkles, Target, BookOpen, Pin, Lightbulb, Save } from 'lucide-react';
 import { useUser } from '../../context/userContext';
-import Login from '../Auth/Login';
+import Login from '../Auth/Login';;
 import SignUp from '../Auth/SignUp';
 
 const LandingPage = () => {
@@ -53,134 +54,237 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
+    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50">
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+      <motion.nav
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm"
+      >
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <motion.div
+            className="flex items-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
             <Sparkles className="w-6 h-6 text-orange-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Interview Prep AI</h1>
-          </div>
-          <button
+            <h1 className="text-2xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Interview Prep AI
+            </h1>
+          </motion.div>
+          <motion.button
             onClick={() => isAuthenticated ? navigate('/dashboard') : setShowLogin(true)}
-            className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-full transition-all duration-300 hover:shadow-lg hover:scale-105"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-6 py-2.5 bg-linear-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-full transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40"
           >
             {isAuthenticated ? 'Dashboard' : 'Login / Sign Up'}
-          </button>
+          </motion.button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-orange-100 to-orange-50 text-orange-700 rounded-full text-sm font-medium mb-6 border border-orange-200/50 shadow-sm"
+          >
             <Sparkles className="w-4 h-4" />
             AI Powered
-          </div>
-          <h2 className="text-6xl font-bold text-gray-900 mb-6">
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
+          >
             Ace Interviews with
             <br />
-            <span className="text-orange-600">AI-Powered</span> Learning
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Get role-specific questions, expand answers when you need them, dive deeper into concepts, and organize everything your way. From preparation to mastery — your ultimate interview toolkit is here.
-          </p>
-          <button
+            <span className="bg-linear-to-r from-orange-600 via-orange-500 to-orange-600 bg-clip-text text-transparent">
+              AI-Powered
+            </span>{' '}
+            Learning
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed"
+          >
+            Get role-specific questions, expand answers when you need them, dive deeper into
+            concepts, and organize everything your way. From preparation to mastery — your ultimate
+            interview toolkit is here.
+          </motion.p>
+          <motion.button
             onClick={handleGetStarted}
-            className="px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full text-lg transition-all duration-300 hover:shadow-2xl hover:scale-105"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className="px-8 py-4 bg-linear-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white font-semibold rounded-full text-lg transition-all duration-300 shadow-2xl shadow-gray-900/30 hover:shadow-gray-900/50"
           >
             Get Started
-          </button>
+          </motion.button>
         </div>
 
         {/* Screenshot Preview */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 rounded-3xl blur-3xl opacity-20"></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-br from-orange-50 to-white p-12">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="relative"
+        >
+          <div className="absolute inset-0 bg-linear-to-r from-orange-400 to-orange-600 rounded-3xl blur-3xl opacity-20 animate-pulse"></div>
+          <motion.div
+            whileHover={{ y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="relative bg-white rounded-3xl shadow-2xl border border-gray-200/80 overflow-hidden"
+          >
+            <div className="bg-linear-to-br from-orange-50 to-white p-8 md:p-12">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200/80 p-6 md:p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                    <span className="text-xl font-bold text-orange-600">FD</span>
+                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-orange-100 to-orange-50 flex items-center justify-center ring-2 ring-orange-200/50">
+                    <span className="text-xl font-bold bg-linear-to-br from-orange-600 to-orange-700 bg-clip-text text-transparent">
+                      FD
+                    </span>
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">Frontend Developer</h3>
-                    <p className="text-sm text-gray-600">React.js, DOM manipulation, CSS Flexbox</p>
+                    <p className="text-sm text-gray-600">
+                      React.js, DOM manipulation, CSS Flexbox
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="font-medium text-gray-900 mb-2">What is JSX? Explain its role in React.</p>
-                    <button className="text-sm text-orange-600 font-medium">Learn More →</button>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="font-medium text-gray-900 mb-2">Explain the concept of event handling in React.</p>
-                    <button className="text-sm text-orange-600 font-medium">Learn More →</button>
-                  </div>
+                  <motion.div
+                    whileHover={{ scale: 1.01, x: 4 }}
+                    className="p-4 bg-linear-to-br from-gray-50 to-white rounded-xl border border-gray-200/80 hover:border-orange-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  >
+                    <p className="font-medium text-gray-900 mb-2">
+                      What is JSX? Explain its role in React.
+                    </p>
+                    <button className="text-sm text-orange-600 font-medium hover:text-orange-700 transition-colors">
+                      Learn More →
+                    </button>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.01, x: 4 }}
+                    className="p-4 bg-linear-to-br from-gray-50 to-white rounded-xl border border-gray-200/80 hover:border-orange-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                  >
+                    <p className="font-medium text-gray-900 mb-2">
+                      Explain the concept of event handling in React.
+                    </p>
+                    <button className="text-sm text-orange-600 font-medium hover:text-orange-700 transition-colors">
+                      Learn More →
+                    </button>
+                  </motion.div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Features Section */}
       <section className="max-w-7xl mx-auto px-6 py-20">
-        <h3 className="text-4xl font-bold text-center text-gray-900 mb-16">
+        <motion.h3
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-4xl md:text-5xl font-bold text-center text-gray-900 mb-16"
+        >
           Features That Make You Shine
-        </h3>
+        </motion.h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <div
+            <motion.div
               key={index}
-              className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:border-orange-200/50 transition-all duration-300 group"
             >
-              <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 mb-6">
+              <motion.div
+                whileHover={{ rotate: 5, scale: 1.1 }}
+                transition={{ duration: 0.3 }}
+                className="w-16 h-16 bg-linear-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:shadow-lg group-hover:shadow-orange-500/20 transition-shadow duration-300"
+              >
                 {feature.icon}
-              </div>
+              </motion.div>
               <h4 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h4>
               <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-3xl p-16 text-center shadow-2xl">
-          <h3 className="text-4xl font-bold text-white mb-6">
-            Ready to Ace Your Next Interview?
-          </h3>
-          <p className="text-xl text-orange-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of developers preparing smarter with AI-powered interview prep
-          </p>
-          <button
-            onClick={handleGetStarted}
-            className="px-8 py-4 bg-white text-orange-600 font-semibold rounded-full text-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
-          >
-            Start Learning Now
-          </button>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          whileHover={{ scale: 1.01 }}
+          className="bg-linear-to-br from-orange-600 via-orange-600 to-orange-700 rounded-3xl p-12 md:p-16 text-center shadow-2xl shadow-orange-500/30 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
+          <div className="relative z-10">
+            <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
+              Ready to Ace Your Next Interview?
+            </h3>
+            <p className="text-lg md:text-xl text-orange-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of developers preparing smarter with AI-powered interview prep
+            </p>
+            <motion.button
+              onClick={handleGetStarted}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-8 py-4 bg-white text-orange-600 font-semibold rounded-full text-lg hover:shadow-2xl transition-all duration-300 shadow-xl"
+            >
+              Start Learning Now
+            </motion.button>
+          </div>
+        </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 py-8">
+      <footer className="border-t border-gray-200 py-8 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 text-center text-gray-600">
-          <p>© 2025 Interview Prep AI. Built with ❤️ for developers.</p>
+          <p>2025 Interview Prep AI. Built with care for developers.</p>
         </div>
       </footer>
 
       {/* Modals */}
-      {showLogin && <Login onClose={() => setShowLogin(false)} onSwitchToSignup={() => {
-        setShowLogin(false);
-        setShowSignup(true);
-      }} />}
-      {showSignup && <SignUp onClose={() => setShowSignup(false)} onSwitchToLogin={() => {
-        setShowSignup(false);
-        setShowLogin(true);
-      }} />}
+      {showLogin && (
+        <Login
+          onClose={() => setShowLogin(false)}
+          onSwitchToSignup={() => {
+            setShowLogin(false);
+            setShowSignup(true);
+          }}
+        />
+      )}
+      {showSignup && (
+        <SignUp
+          onClose={() => setShowSignup(false)}
+          onSwitchToLogin={() => {
+            setShowSignup(false);
+            setShowLogin(true);
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default LandingPage;
+

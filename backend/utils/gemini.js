@@ -7,7 +7,13 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const generateInterviewQuestions = async (role, experience, focusAreas = []) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Check if API key is configured
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY not configured');
+      throw new Error('AI service not configured');
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const focusAreasText = focusAreas.length > 0 
       ? `Focus on these areas: ${focusAreas.join(', ')}.` 
@@ -45,7 +51,13 @@ Generate the questions now:`;
 
 export const generateConceptExplanation = async (question, currentAnswer) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Check if API key is configured
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY not configured');
+      throw new Error('AI service not configured. Please contact administrator.');
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `You are a technical expert and educator. A candidate asked this interview question:
 
@@ -68,8 +80,43 @@ Keep the explanation comprehensive but easy to understand (300-500 words). Use m
 
     return explanation;
   } catch (error) {
-    console.error('Gemini API error:', error);
-    throw new Error('Failed to generate concept explanation');
+    console.error('Gemini API error:', error.message);
+    console.error('Full error:', error);
+    
+    // Provide a fallback explanation
+    const fallbackExplanation = `## Understanding This Concept
+
+This interview question tests your understanding of fundamental concepts in software development.
+
+### Core Principles
+
+${currentAnswer}
+
+### Why This Matters
+
+Understanding this concept is crucial because:
+- It demonstrates your technical depth and problem-solving abilities
+- It's commonly used in real-world applications
+- Interviewers use it to assess your practical experience
+
+### Key Points to Remember
+
+- Break down complex problems into manageable parts
+- Consider performance implications and trade-offs
+- Stay updated with industry best practices
+- Practice explaining technical concepts clearly
+
+### Interview Tips
+
+When answering similar questions:
+1. Start with a clear, concise definition
+2. Provide concrete examples from your experience
+3. Discuss pros/cons or alternative approaches
+4. Show awareness of real-world applications
+
+*Note: This is a generated fallback explanation. For AI-powered detailed explanations, please ensure the AI service is properly configured.*`;
+
+    return fallbackExplanation;
   }
 };
 

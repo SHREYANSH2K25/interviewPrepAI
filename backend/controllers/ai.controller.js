@@ -37,21 +37,43 @@ export const generateQuestions = async (req, res) => {
 export const explainConcept = async (req, res) => {
   try {
     const { questionId } = req.params;
+    console.log('Explain concept requested for question ID:', questionId);
+
+    // Validate ObjectId format
+    if (!questionId || questionId.length !== 24) {
+      console.error('Invalid question ID format:', questionId);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid question ID format' 
+      });
+    }
 
     // Find question
     const question = await Question.findById(questionId);
     if (!question) {
+      console.error('Question not found:', questionId);
       return res.status(404).json({ 
         success: false, 
-        message: 'Question not found' 
+        message: 'Question not found in database' 
       });
     }
 
-    // Generate explanation using Gemini AI
-    const explanation = await generateConceptExplanation(
-      question.question, 
-      question.answer
-    );
+    console.log('Question found, generating explanation...');
+
+    // Generate explanation using Gemini AI (with fallback)
+    let explanation;
+    try {
+      explanation = await generateConceptExplanation(
+        question.question, 
+        question.answer
+      );
+      console.log('Explanation generated successfully');
+    } catch (aiError) {
+      console.error('AI generation failed:', aiError.message);
+      // Use fallback explanation
+      explanation = `## Concept Explanation\n\n${question.answer}\n\n### Additional Context\n\nThis concept is fundamental to understanding the role's responsibilities. Consider how this applies to real-world scenarios and be prepared to discuss practical examples from your experience.\n\n*Note: AI explanation service is currently unavailable. This is a basic fallback explanation.*`;
+      console.log('Using fallback explanation');
+    }
 
     // Update question with explanation
     question.conceptExplanation = explanation;
@@ -67,7 +89,8 @@ export const explainConcept = async (req, res) => {
     console.error('Explain concept error:', error);
     res.status(500).json({ 
       success: false, 
-      message: error.message || 'Server error generating explanation' 
+      message: error.message || 'Server error generating explanation',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };

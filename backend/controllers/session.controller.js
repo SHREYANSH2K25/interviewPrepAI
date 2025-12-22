@@ -2,6 +2,30 @@ import Session from '../models/Session.js';
 import Question from '../models/Question.js';
 import { generateInterviewQuestions } from '../utils/gemini.js';
 
+// Sample questions fallback when AI is unavailable
+const getSampleQuestions = (role, experience) => [
+  {
+    question: `What are the key responsibilities of a ${role}?`,
+    answer: `A ${role} with ${experience} years of experience typically handles core technical implementations, code reviews, mentoring junior developers, and contributing to architectural decisions.`
+  },
+  {
+    question: "Describe your experience with version control systems.",
+    answer: "Experience with Git, branching strategies, pull requests, code reviews, and collaboration workflows in team environments."
+  },
+  {
+    question: "How do you approach problem-solving in your projects?",
+    answer: "Breaking down complex problems, analyzing requirements, considering multiple solutions, evaluating trade-offs, and implementing the most effective approach."
+  },
+  {
+    question: "What development methodologies are you familiar with?",
+    answer: "Agile, Scrum, Kanban methodologies with experience in sprint planning, daily standups, retrospectives, and continuous delivery practices."
+  },
+  {
+    question: "How do you ensure code quality in your projects?",
+    answer: "Through unit testing, code reviews, following coding standards, using linters, automated testing, and continuous integration practices."
+  }
+];
+
 // @desc    Create a new interview session
 // @route   POST /api/sessions
 export const createSession = async (req, res) => {
@@ -16,8 +40,14 @@ export const createSession = async (req, res) => {
       });
     }
 
-    // Generate questions using AI
-    const aiQuestions = await generateInterviewQuestions(role, experience, focusAreas);
+    // Try to generate questions using AI, fallback to sample questions
+    let aiQuestions;
+    try {
+      aiQuestions = await generateInterviewQuestions(role, experience, focusAreas);
+    } catch (aiError) {
+      console.warn('AI generation failed, using sample questions:', aiError.message);
+      aiQuestions = getSampleQuestions(role, experience);
+    }
 
     // Create questions in database
     const questionIds = [];
@@ -49,9 +79,10 @@ export const createSession = async (req, res) => {
     });
   } catch (error) {
     console.error('Create session error:', error);
+    
     res.status(500).json({ 
       success: false, 
-      message: 'Server error creating session' 
+      message: 'Server error creating session. Please try again.' 
     });
   }
 };
