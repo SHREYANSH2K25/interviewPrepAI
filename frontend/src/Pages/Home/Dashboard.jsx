@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   LogOut,
-  Sparkles,
   BookOpen,
   Clock,
   Trash2,
@@ -13,10 +12,89 @@ import {
   X,
   Target,
   User,
+  Play,
+  Sparkles,
+  TrendingUp,
+  RotateCcw,
 } from 'lucide-react';
 import { useUser } from '../../context/userContext';
 import axiosInstance from '../../utils/axiosInstance';
 import API_PATHS from '../../utils/apiPaths';
+import ThemeToggle from '../../components/ThemeToggle';
+import Navbar from '../../components/Navbar';
+import KnowledgeGapHeatmap from '../../components/KnowledgeGapHeatmap';
+import WeakConceptsPanel from '../../components/WeakConceptsPanel';
+
+// Role-driven theming for stronger contrast and personality on session cards
+const roleThemes = {
+  Frontend: {
+    gradient: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 45%, #8b5cf6 100%)',
+    glow: '0 30px 80px -38px rgba(99, 102, 241, 0.55)',
+    chipBg: 'rgba(224, 242, 254, 0.14)',
+    chipText: '#e2f3ff',
+  },
+  Backend: {
+    gradient: 'linear-gradient(135deg, #f59e0b 0%, #f97316 35%, #ec4899 100%)',
+    glow: '0 30px 80px -38px rgba(249, 115, 22, 0.55)',
+    chipBg: 'rgba(255, 237, 213, 0.16)',
+    chipText: '#fff5e6',
+  },
+  'Full Stack': {
+    gradient: 'linear-gradient(135deg, #22d3ee 0%, #6366f1 50%, #0ea5e9 100%)',
+    glow: '0 30px 80px -38px rgba(14, 165, 233, 0.55)',
+    chipBg: 'rgba(226, 232, 240, 0.18)',
+    chipText: '#e5ecff',
+  },
+  Data: {
+    gradient: 'linear-gradient(135deg, #fb7185 0%, #c084fc 50%, #6366f1 100%)',
+    glow: '0 30px 80px -38px rgba(192, 132, 252, 0.55)',
+    chipBg: 'rgba(255, 228, 235, 0.16)',
+    chipText: '#ffe9f3',
+  },
+  DevOps: {
+    gradient: 'linear-gradient(135deg, #14b8a6 0%, #22d3ee 45%, #60a5fa 100%)',
+    glow: '0 30px 80px -38px rgba(34, 211, 238, 0.55)',
+    chipBg: 'rgba(209, 250, 229, 0.16)',
+    chipText: '#e6fff5',
+  },
+  'UI/UX': {
+    gradient: 'linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #10b981 100%)',
+    glow: '0 30px 80px -38px rgba(168, 85, 247, 0.55)',
+    chipBg: 'rgba(237, 233, 254, 0.16)',
+    chipText: '#f6f0ff',
+  },
+  Mobile: {
+    gradient: 'linear-gradient(135deg, #fb7185 0%, #f97316 50%, #fcd34d 100%)',
+    glow: '0 30px 80px -38px rgba(249, 115, 22, 0.55)',
+    chipBg: 'rgba(255, 228, 230, 0.18)',
+    chipText: '#fff5f7',
+  },
+  'AI/ML': {
+    gradient: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 55%, #22c55e 100%)',
+    glow: '0 30px 80px -38px rgba(6, 182, 212, 0.55)',
+    chipBg: 'rgba(207, 250, 254, 0.16)',
+    chipText: '#e0fbff',
+  },
+  Product: {
+    gradient: 'linear-gradient(135deg, #6366f1 0%, #0ea5e9 45%, #a78bfa 100%)',
+    glow: '0 30px 80px -38px rgba(99, 102, 241, 0.55)',
+    chipBg: 'rgba(226, 232, 240, 0.16)',
+    chipText: '#e8edff',
+  },
+  default: {
+    gradient: 'linear-gradient(135deg, #1f2937 0%, #111827 60%, #0b1222 100%)',
+    glow: '0 30px 80px -38px rgba(17, 24, 39, 0.55)',
+    chipBg: 'rgba(255, 255, 255, 0.12)',
+    chipText: '#f8fafc',
+  },
+};
+
+const getRoleTheme = (role) => {
+  for (const key of Object.keys(roleThemes)) {
+    if (role.includes(key)) return roleThemes[key];
+  }
+  return roleThemes.default;
+};
 
 // Default sample sessions with AI-generated questions
 export const defaultSessions = [
@@ -233,6 +311,10 @@ const Dashboard = () => {
     experience: '',
     focusAreas: '',
   });
+  const [readinessScore, setReadinessScore] = useState(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [showKnowledgeGaps, setShowKnowledgeGaps] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -240,8 +322,32 @@ const Dashboard = () => {
       return;
     }
     fetchSessions();
+    fetchReadinessScore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, navigate]);
+
+  // Refresh score when returning to dashboard (e.g., from InterviewPrep)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated) {
+        fetchReadinessScore();
+      }
+    };
+
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        fetchReadinessScore();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated]);
 
   const fetchSessions = async () => {
     try {
@@ -257,6 +363,26 @@ const Dashboard = () => {
       setSessions(defaultSessions);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReadinessScore = async () => {
+    setScoreLoading(true);
+    try {
+      console.log('🔄 Fetching readiness score...');
+      const response = await axiosInstance.get(API_PATHS.analytics.readinessScore);
+      if (response.data.success) {
+        console.log('📊 Readiness score received:', {
+          score: response.data.score,
+          breakdown: response.data.breakdown,
+          stats: response.data.stats
+        });
+        setReadinessScore(response.data);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch readiness score:', error);
+    } finally {
+      setScoreLoading(false);
     }
   };
 
@@ -279,6 +405,8 @@ const Dashboard = () => {
         setSessions([response.data.session, ...sessions]);
         setShowCreateForm(false);
         setFormData({ role: '', experience: '', focusAreas: '' });
+        // Refresh readiness score after creating a session
+        fetchReadinessScore();
       }
     } catch (error) {
       console.error('Failed to create session:', error);
@@ -320,9 +448,70 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  const customSessions = sessions.filter((s) => !s.isDefault);
+  const latestCustomSession = customSessions[0];
+  const firstName = user?.name?.split(' ')[0] || 'there';
+  const totalQuestionsPracticed = sessions.reduce(
+    (acc, session) => acc + (session.questions?.length || 0),
+    0
+  );
+  const pinnedQuestions = sessions.reduce((acc, session) => {
+    if (!session.questions) return acc;
+    return acc + session.questions.filter((q) => q.isPinned).length;
+  }, 0);
+
+  const formatMonthDay = (dateString) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const lastSessionReference = latestCustomSession || sessions[0];
+  const lastSessionLabel = lastSessionReference
+    ? formatMonthDay(lastSessionReference.updatedAt || lastSessionReference.createdAt) || 'N/A'
+    : 'N/A';
+  const lastSessionSubtext = lastSessionReference
+    ? lastSessionReference.role
+    : 'Sample template ready';
+
+  const highlightCards = [
+    {
+      title: latestCustomSession ? 'Resume last session' : 'Create your first session',
+      description: latestCustomSession
+        ? `${latestCustomSession.role} • ${latestCustomSession.questions?.length || 0} questions`
+        : 'Let AI craft a tailored question set in seconds.',
+      icon: Play,
+      accent: 'from-indigo-500/10 to-indigo-500/5',
+      actionLabel: latestCustomSession ? 'Resume practice' : 'Start building',
+      onClick: latestCustomSession
+        ? () => navigate(`/interview/${latestCustomSession._id}`)
+        : () => setShowCreateForm(true),
+    },
+    {
+      title: 'Spin up a fresh AI set',
+      description: 'Pick a role, refine focus, and generate new prompts instantly.',
+      icon: Sparkles,
+      accent: 'from-orange-500/10 to-rose-500/10',
+      actionLabel: 'Create session',
+      onClick: () => setShowCreateForm(true),
+    },
+    {
+      title: 'Review streaks & stats',
+      description: pinnedQuestions
+        ? `${pinnedQuestions} pinned questions waiting to revisit.`
+        : 'Head to your profile for progress, streaks, and achievements.',
+      icon: TrendingUp,
+      accent: 'from-emerald-500/10 to-teal-500/10',
+      actionLabel: 'Open profile',
+      onClick: () => navigate('/profile'),
+    },
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-orange-50 via-white to-orange-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
@@ -334,59 +523,262 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white/90 backdrop-blur-lg border-b border-gray-200/80 sticky top-0 z-40 shadow-sm"
-      >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <motion.div
-            className="flex items-center gap-3"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Sparkles className="w-7 h-7 text-orange-600" />
-            <h1 className="text-2xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Interview Prep AI
-            </h1>
-          </motion.div>
-          <div className="flex items-center gap-4">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-right hidden sm:block"
-            >
-              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.email}</p>
-            </motion.div>
-            <motion.button
-              onClick={() => navigate('/profile')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2.5 hover:bg-orange-50 rounded-xl transition-colors group"
-              title="View Profile"
-            >
-              <User className="w-5 h-5 text-gray-600 group-hover:text-orange-600" />
-            </motion.button>
-            <motion.button
-              onClick={handleLogout}
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5 text-gray-600" />
-            </motion.button>
-          </div>
-        </div>
-      </motion.header>
+    <div className="min-h-screen relative text-slate-900 dark:text-slate-100">
+      <Navbar onLogoClick={() => navigate('/dashboard')}>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.15 }}
+          className="text-right hidden sm:block"
+        >
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{user?.name}</p>
+          <p className="text-xs text-gray-800 dark:text-gray-400">{user?.email}</p>
+        </motion.div>
+        <motion.button
+          onClick={() => navigate('/profile')}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2.5 btn-ghost rounded-xl transition-colors group"
+          title="View Profile"
+        >
+          <User className="w-5 h-5 text-black dark:text-gray-300 group-hover:text-orange-600" />
+        </motion.button>
+        <ThemeToggle />
+        <motion.button
+          onClick={handleLogout}
+          whileHover={{ scale: 1.05, rotate: 5 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2.5 btn-ghost rounded-xl transition-colors"
+          title="Logout"
+        >
+          <LogOut className="w-5 h-5 text-black dark:text-gray-300" />
+        </motion.button>
+      </Navbar>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-10 relative">
+        <div className="absolute -z-10 inset-0 opacity-60">
+          <div className="absolute w-72 h-72 bg-orange-400/20 blur-3xl rounded-full -top-10 -left-10" />
+          <div className="absolute w-72 h-72 bg-indigo-400/15 blur-3xl rounded-full top-20 right-0" />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative overflow-hidden rounded-[32px] mb-12 bg-gradient-to-br from-orange-500 via-rose-500 to-indigo-600 text-white p-8 md:p-12 shadow-[0_35px_80px_rgba(234,88,12,0.35)]"
+        >
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute -top-16 -left-10 w-56 h-56 bg-white/25 blur-3xl rounded-full" />
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center">
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-[0.4em] text-white/70 mb-4">Interview prep hub</p>
+              <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-4">
+                Welcome back, {firstName}! Keep the momentum going.
+              </h1>
+              <p className="text-white/85 text-lg max-w-2xl">
+                Resume a saved session, launch a fresh AI interview, or review your streaks without worrying about light/dark readability.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowCreateForm(true)}
+                  className="px-6 py-3 rounded-2xl bg-white text-orange-600 font-semibold text-base shadow-xl flex items-center gap-2"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Generate new session
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/profile')}
+                  className="px-6 py-3 rounded-2xl border border-white/40 text-white font-semibold text-base bg-white/10 backdrop-blur flex items-center gap-2"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  View profile insights
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowKnowledgeGaps(!showKnowledgeGaps)}
+                  className="px-6 py-3 rounded-2xl border border-white/40 text-white font-semibold text-base bg-white/10 backdrop-blur flex items-center gap-2"
+                >
+                  <Target className="w-5 h-5" />
+                  {showKnowledgeGaps ? 'Hide' : 'Show'} Knowledge Gaps
+                </motion.button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 flex-1 min-w-[240px]">
+              {[
+                { label: 'Custom sessions', value: customSessions.length },
+                { label: 'Questions logged', value: totalQuestionsPracticed },
+                { label: 'Pinned to review', value: pinnedQuestions },
+                { label: 'Templates ready', value: defaultSessions.length },
+              ].map((metric) => (
+                <div key={metric.label} className="p-4 rounded-2xl bg-white/15 border border-white/20">
+                  <p className="text-sm uppercase tracking-[0.2em] text-white/70">{metric.label}</p>
+                  <p className="text-3xl font-bold">{metric.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Knowledge Gap Heatmap */}
+        <AnimatePresence>
+          {showKnowledgeGaps && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mb-12"
+            >
+              <KnowledgeGapHeatmap />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Weak Concepts Panel - Always Visible */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="mb-12"
+        >
+          <WeakConceptsPanel />
+        </motion.div>
+
+        {/* Interview Readiness Score Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-12"
+        >
+          <div className="glass-card p-8 rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                  <Target className="w-7 h-7 text-orange-600" />
+                  Interview Readiness Score
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Your personalized interview preparation score based on accuracy, coverage, consistency, and depth.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {!scoreLoading && readinessScore && (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.05, rotate: 180 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={fetchReadinessScore}
+                      className="p-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                      title="Refresh score"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowScoreModal(true)}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-shadow"
+                    >
+                      View Details
+                    </motion.button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {scoreLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Calculating your readiness score...</span>
+              </div>
+            ) : readinessScore ? (
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Circular Progress */}
+                <div className="flex flex-col items-center justify-center">
+                  <div className="relative w-48 h-48">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="96"
+                        cy="96"
+                        r="88"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        className="text-gray-200 dark:text-gray-700"
+                      />
+                      <circle
+                        cx="96"
+                        cy="96"
+                        r="88"
+                        stroke="url(#scoreGradient)"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${(readinessScore.score / 100) * 553} 553`}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                      />
+                      <defs>
+                        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#f97316" />
+                          <stop offset="50%" stopColor="#ec4899" />
+                          <stop offset="100%" stopColor="#8b5cf6" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-5xl font-bold text-gray-900 dark:text-white">{readinessScore.score}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">out of 100</span>
+                    </div>
+                  </div>
+                  <div className="mt-6 text-center">
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{readinessScore.insights.level}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{readinessScore.insights.message}</p>
+                  </div>
+                </div>
+
+                {/* Score Breakdown */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Score Breakdown</h3>
+                  {[
+                    { label: 'Accuracy', value: readinessScore.breakdown.accuracy, max: 40, color: 'from-orange-500 to-pink-500' },
+                    { label: 'Coverage', value: readinessScore.breakdown.coverage, max: 25, color: 'from-pink-500 to-purple-500' },
+                    { label: 'Consistency', value: readinessScore.breakdown.consistency, max: 20, color: 'from-purple-500 to-indigo-500' },
+                    { label: 'Depth', value: readinessScore.breakdown.depth, max: 15, color: 'from-indigo-500 to-blue-500' },
+                  ].map((metric) => (
+                    <div key={metric.label}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{metric.label}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          {metric.value} / {metric.max}
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(metric.value / metric.max) * 100}%` }}
+                          transition={{ duration: 0.8, delay: 0.2 }}
+                          className={`h-full bg-gradient-to-r ${metric.color} rounded-full`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600 dark:text-gray-400">Unable to load readiness score. Please try refreshing.</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
         {/* Your Sessions Summary Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -394,71 +786,122 @@ const Dashboard = () => {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Sessions</h2>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mb-6 drop-shadow-sm">Your Sessions</h2>
           
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {[
-            {
-              icon: BookOpen,
-              value: sessions.length,
-              label: 'Total Sessions',
-              color: 'orange',
-              delay: 0,
-            },
-            {
-              icon: Target,
-              value: sessions.reduce((acc, s) => acc + s.questions.length, 0),
-              label: 'Questions Practiced',
-              color: 'blue',
-              delay: 0.1,
-            },
-            {
-              icon: Clock,
-              value:
-                sessions.length > 0
-                  ? new Date(sessions[0].createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  : 'N/A',
-              label: 'Last Session',
-              color: 'green',
-              delay: 0.2,
-            },
-          ].map((stat, index) => {
-            const Icon = stat.icon;
-            const colorClasses = {
-              orange: 'from-orange-100 to-orange-50 text-orange-600',
-              blue: 'from-blue-100 to-blue-50 text-blue-600',
-              green: 'from-green-100 to-green-50 text-green-600',
-            };
+            {[
+              {
+                icon: BookOpen,
+                value: sessions.length,
+                label: 'Total Sessions',
+                subtext: `${customSessions.length} custom saved`,
+                color: 'orange',
+                delay: 0,
+              },
+              {
+                icon: Target,
+                value: totalQuestionsPracticed,
+                label: 'Questions Practiced',
+                subtext: 'Across every role',
+                color: 'blue',
+                delay: 0.1,
+              },
+              {
+                icon: Clock,
+                value: lastSessionLabel,
+                label: 'Last Session',
+                subtext: lastSessionSubtext,
+                color: 'green',
+                delay: 0.2,
+              },
+            ].map((stat, index) => {
+              const Icon = stat.icon;
+              const colorClasses = {
+                orange: 'from-orange-100 to-orange-50 text-orange-600',
+                blue: 'from-blue-100 to-blue-50 text-blue-600',
+                green: 'from-green-100 to-green-50 text-green-600',
+              };
 
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: stat.delay }}
-                whileHover={{ y: -4, scale: 1.02 }}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl hover:border-gray-200 transition-all duration-300"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <motion.div
-                    whileHover={{ rotate: 360 }}
-                    transition={{ duration: 0.6 }}
-                    className={`w-12 h-12 bg-linear-to-br ${colorClasses[stat.color]} rounded-xl flex items-center justify-center shadow-sm`}
-                  >
-                    <Icon className="w-6 h-6" />
-                  </motion.div>
-                </div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-                <p className="text-gray-600">{stat.label}</p>
-              </motion.div>
-            );
-          })}
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: stat.delay }}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  className="relative overflow-hidden rounded-2xl p-6 border border-gray-200/80 dark:border-white/10 bg-white/95 dark:bg-slate-900/60 shadow-lg shadow-black/5 dark:shadow-black/40"
+                >
+                  <div
+                    className="absolute inset-0 opacity-60"
+                    style={{
+                      backgroundImage:
+                        'radial-gradient(circle at 15% 20%, rgba(15,23,42,0.06) 0, transparent 40%), radial-gradient(circle at 80% 0%, rgba(15,23,42,0.05) 0, transparent 38%)',
+                    }}
+                  />
+                  <div className="relative flex items-center justify-between mb-5">
+                    <motion.div
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.6 }}
+                      className={`w-12 h-12 bg-gradient-to-br ${colorClasses[stat.color]} rounded-xl flex items-center justify-center shadow-md ring-1 ring-black/5 dark:ring-white/40`}
+                    >
+                      <Icon className="w-6 h-6" />
+                    </motion.div>
+                    <span className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300 font-semibold">
+                      Summary
+                    </span>
+                  </div>
+                  <h3 className="relative text-4xl font-extrabold leading-tight mb-1 text-slate-900 dark:text-white">
+                    {stat.value}
+                  </h3>
+                  <p className="relative text-base font-semibold text-slate-700 dark:text-slate-200 leading-snug mb-1">
+                    {stat.label}
+                  </p>
+                  <p className="relative text-sm text-slate-500 dark:text-slate-300">{stat.subtext}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12"
+          >
+            {highlightCards.map((card, idx) => {
+              const Icon = card.icon;
+              return (
+                <motion.button
+                  key={card.title}
+                  type="button"
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={card.onClick}
+                  className="text-left"
+                >
+                  <div className={`h-full p-5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-gradient-to-br ${card.accent} backdrop-blur-sm shadow-sm flex flex-col gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-white/70 dark:bg-white/10 flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-slate-900 dark:text-white" />
+                      </div>
+                      <span className="text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+                        Quick Action
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900 dark:text-white">{card.title}</h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{card.description}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-orange-600 dark:text-orange-300 inline-flex items-center gap-2">
+                      {card.actionLabel}
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </motion.div>
 
         {/* Session Cards Grid Header */}
         <motion.div
@@ -471,7 +914,7 @@ const Dashboard = () => {
             onClick={() => setShowCreateForm(true)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg"
+            className="flex items-center gap-2 px-6 py-3 btn-primary text-white font-semibold rounded-xl transition-all duration-200"
           >
             <Plus className="w-5 h-5" />
             New Session
@@ -489,7 +932,7 @@ const Dashboard = () => {
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-20 h-20 bg-linear-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+              className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
             >
               <BookOpen className="w-10 h-10 text-gray-400" />
             </motion.div>
@@ -501,7 +944,7 @@ const Dashboard = () => {
               onClick={() => setShowCreateForm(true)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-linear-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-500/30"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-500/30"
             >
               <Plus className="w-5 h-5" />
               Create Session
@@ -517,8 +960,8 @@ const Dashboard = () => {
                 transition={{ duration: 0.5 }}
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-1 h-8 bg-linear-to-b from-blue-600 to-blue-400 rounded-full"></div>
-                  <h2 className="text-2xl font-bold text-gray-900">Sample Sessions</h2>
+                  <div className="w-1 h-8 bg-gradient-to-b from-blue-600 to-blue-400 rounded-full"></div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sample Sessions</h2>
                   <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
                     {defaultSessions.length} Templates
                   </span>
@@ -531,19 +974,6 @@ const Dashboard = () => {
                 >
                   <AnimatePresence>
                     {defaultSessions.map((session, index) => {
-                const roleColors = {
-                  'Frontend': 'bg-green-50 border-green-200',
-                  'Backend': 'bg-orange-50 border-orange-200',
-                  'Full Stack': 'bg-blue-50 border-blue-200',
-                  'Data': 'bg-pink-50 border-pink-200',
-                  'DevOps': 'bg-cyan-50 border-cyan-200',
-                  'UI/UX': 'bg-purple-50 border-purple-200',
-                  'Mobile': 'bg-rose-50 border-rose-200',
-                  'AI/ML': 'bg-emerald-50 border-emerald-200',
-                  'Product': 'bg-violet-50 border-violet-200',
-                  'default': 'bg-gray-50 border-gray-200'
-                };
-
                 const roleInitials = {
                   'Frontend Developer': 'FD',
                   'Backend Developer': 'BD',
@@ -555,13 +985,6 @@ const Dashboard = () => {
                   'Mobile App Developer': 'MA',
                   'AI/ML Engineer': 'AE',
                   'Product Manager': 'PM',
-                };
-
-                const getColorClass = (role) => {
-                  for (const [key, value] of Object.entries(roleColors)) {
-                    if (role.includes(key)) return value;
-                  }
-                  return roleColors.default;
                 };
 
                 const getInitials = (role) => {
@@ -577,6 +1000,8 @@ const Dashboard = () => {
                   return `${day}${suffix} ${month} ${year}`;
                 };
 
+                const theme = getRoleTheme(session.role);
+
                 return (
                   <motion.div
                     key={session._id}
@@ -586,8 +1011,12 @@ const Dashboard = () => {
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     whileHover={{ y: -4, scale: 1.02 }}
                     onClick={() => navigate(`/interview/${session._id}`)}
-                    className={`${getColorClass(session.role)} rounded-2xl p-6 shadow-sm border-2 hover:shadow-lg transition-all duration-300 cursor-pointer relative`}
+                    style={{ background: theme.gradient, boxShadow: theme.glow }}
+                    className="relative overflow-hidden rounded-2xl p-6 border border-white/10 elevated-hover transition-all duration-300 cursor-pointer backdrop-blur-xl"
                   >
+                    <div className="absolute inset-0 opacity-50 bg-gradient-to-br from-white/10 via-white/0 to-black/20" />
+                    <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18) 0, transparent 35%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.12) 0, transparent 30%)' }} />
+
                     <motion.button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -595,43 +1024,50 @@ const Dashboard = () => {
                       }}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      className="absolute top-4 right-4 p-1.5 hover:bg-white/60 rounded-lg transition-colors text-gray-400 hover:text-gray-600 z-10"
+                      className="absolute top-4 right-4 p-1.5 rounded-lg transition-colors text-white/70 hover:text-white hover:bg-white/10 z-10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </motion.button>
 
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                        <span className="text-base font-bold text-gray-700">
-                          {getInitials(session.role)}
-                        </span>
+                    <div className="relative flex items-start gap-3 mb-4">
+                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm border border-white/25 rounded-xl flex items-center justify-center shrink-0 shadow-sm text-white font-semibold">
+                        {getInitials(session.role)}
                       </div>
 
                       <div className="flex-1 min-w-0 pr-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">
+                        <h3 className="text-lg font-semibold text-white leading-tight mb-1">
                           {session.role}
                         </h3>
-                        <p className="text-xs text-gray-600 line-clamp-1">
-                          {session.focusAreas && session.focusAreas.length > 0 
+                        <p className="text-xs text-white/80 line-clamp-1">
+                          {session.focusAreas && session.focusAreas.length > 0
                             ? session.focusAreas.join(', ')
                             : 'General preparation'}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="inline-block px-3 py-1 bg-white/70 text-gray-700 text-xs font-medium rounded-full">
+                    <div className="relative flex flex-wrap gap-2 mb-4">
+                      <span
+                        className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full border border-white/15"
+                        style={{ background: theme.chipBg, color: theme.chipText }}
+                      >
                         Exp: {session.experience}
                       </span>
-                      <span className="inline-block px-3 py-1 bg-white/70 text-gray-700 text-xs font-medium rounded-full">
+                      <span
+                        className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full border border-white/15"
+                        style={{ background: theme.chipBg, color: theme.chipText }}
+                      >
                         {session.questions.length} Q&A
                       </span>
-                      <span className="inline-block px-3 py-1 bg-white/70 text-gray-500 text-xs font-medium rounded-full">
+                      <span
+                        className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full border border-white/15"
+                        style={{ background: theme.chipBg, color: theme.chipText }}
+                      >
                         {formatDate(session.updatedAt || session.createdAt)}
                       </span>
                     </div>
 
-                    <p className="text-sm text-gray-700 line-clamp-2 mb-2">
+                    <p className="relative text-sm text-white/90 leading-relaxed">
                       Preparing for {session.role.toLowerCase()} interviews with comprehensive Q&A practice
                     </p>
                   </motion.div>
@@ -650,8 +1086,8 @@ const Dashboard = () => {
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-1 h-8 bg-linear-to-b from-orange-600 to-orange-400 rounded-full"></div>
-                  <h2 className="text-2xl font-bold text-gray-900">My Sessions</h2>
+                  <div className="w-1 h-8 bg-gradient-to-b from-orange-600 to-orange-400 rounded-full"></div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Sessions</h2>
                   <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full">
                     {sessions.filter(s => !s.isDefault).length} Custom
                   </span>
@@ -664,19 +1100,6 @@ const Dashboard = () => {
                 >
                   <AnimatePresence>
                     {sessions.filter(s => !s.isDefault).map((session, index) => {
-                      const roleColors = {
-                        'Frontend': 'bg-green-50 border-green-200',
-                        'Backend': 'bg-orange-50 border-orange-200',
-                        'Full Stack': 'bg-blue-50 border-blue-200',
-                        'Data': 'bg-pink-50 border-pink-200',
-                        'DevOps': 'bg-cyan-50 border-cyan-200',
-                        'UI/UX': 'bg-purple-50 border-purple-200',
-                        'Mobile': 'bg-rose-50 border-rose-200',
-                        'AI/ML': 'bg-emerald-50 border-emerald-200',
-                        'Product': 'bg-violet-50 border-violet-200',
-                        'default': 'bg-gray-50 border-gray-200'
-                      };
-
                       const roleInitials = {
                         'Frontend Developer': 'FD',
                         'Backend Developer': 'BD',
@@ -688,13 +1111,6 @@ const Dashboard = () => {
                         'Mobile App Developer': 'MA',
                         'AI/ML Engineer': 'AE',
                         'Product Manager': 'PM',
-                      };
-
-                      const getColorClass = (role) => {
-                        for (const [key, value] of Object.entries(roleColors)) {
-                          if (role.includes(key)) return value;
-                        }
-                        return roleColors.default;
                       };
 
                       const getInitials = (role) => {
@@ -709,6 +1125,8 @@ const Dashboard = () => {
                         return `${day} ${month} ${year}`;
                       };
 
+                      const theme = getRoleTheme(session.role);
+
                       return (
                         <motion.div
                           key={session._id}
@@ -719,56 +1137,58 @@ const Dashboard = () => {
                           whileHover={{ y: -4, scale: 1.02 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
                           onClick={() => navigate(`/interview/${session._id}`)}
-                          className={`relative ${getColorClass(session.role)} border-2 rounded-2xl p-6 cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 group`}
+                          style={{ background: theme.gradient, boxShadow: theme.glow }}
+                          className="relative overflow-hidden rounded-2xl p-6 cursor-pointer transition-all duration-300 group elevated-hover backdrop-blur-xl border border-white/10"
                         >
+                          <div className="absolute inset-0 opacity-50 bg-gradient-to-br from-white/10 via-white/0 to-black/20" />
+                          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(255,255,255,0.16) 0, transparent 34%), radial-gradient(circle at 85% 10%, rgba(255,255,255,0.12) 0, transparent 30%)' }} />
+
                           {!session.isDefault && (
                             <motion.button
-                              onClick={(e) => handleDeleteSession(session._id, e)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSession(session._id);
+                              }}
                               whileHover={{ scale: 1.1, rotate: 90 }}
                               whileTap={{ scale: 0.9 }}
-                              className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-red-50 rounded-lg transition-colors shadow-sm z-10 group-hover:opacity-100 opacity-0"
+                              className="absolute top-4 right-4 p-2 rounded-lg transition-colors text-white/70 hover:text-white hover:bg-white/10 shadow-sm z-10 group-hover:opacity-100 opacity-0"
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4" />
                             </motion.button>
                           )}
 
-                          <div className="flex items-center gap-4 mb-4">
+                          <div className="relative flex items-center gap-4 mb-4">
                             <motion.div
                               whileHover={{ rotate: 360 }}
                               transition={{ duration: 0.6 }}
-                              className="w-14 h-14 bg-white/90 rounded-xl shadow-md flex items-center justify-center font-bold text-gray-700 text-lg"
+                              className="w-14 h-14 bg-white/20 backdrop-blur-sm border border-white/20 rounded-xl shadow-md flex items-center justify-center font-bold text-white text-lg"
                             >
                               {getInitials(session.role)}
                             </motion.div>
                             <div className="flex-1">
-                              <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
+                              <h3 className="font-semibold text-white text-lg line-clamp-1">
                                 {session.role}
                               </h3>
-                              {session.isDefault && (
-                                <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full mt-1">
-                                  Sample
-                                </span>
-                              )}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
+                          <div className="relative flex items-center gap-3 mb-3 text-sm text-white/90 flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-white/15" style={{ background: theme.chipBg, color: theme.chipText }}>
                               <span className="font-medium">Exp:</span> {session.experience}
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-white/15" style={{ background: theme.chipBg, color: theme.chipText }}>
                               <span className="font-medium">{session.questions.length}</span> Q&A
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                            <span className="flex items-center gap-1">
+                          <div className="relative flex items-center justify-between text-xs text-white/90 mb-3">
+                            <span className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/15" style={{ background: theme.chipBg, color: theme.chipText }}>
                               <Clock className="w-3.5 h-3.5" />
                               {formatDate(session.updatedAt || session.createdAt)}
                             </span>
                           </div>
 
-                          <p className="text-sm text-gray-700 line-clamp-2 mb-2">
+                          <p className="relative text-sm text-white/90 leading-relaxed line-clamp-2">
                             Preparing for {session.role.toLowerCase()} interviews with comprehensive Q&A practice
                           </p>
                         </motion.div>
@@ -798,25 +1218,25 @@ const Dashboard = () => {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg relative"
+              className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl dark:shadow-black/50 w-full max-w-lg relative"
             >
               <motion.button
                 onClick={() => setShowCreateForm(false)}
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
-                className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute top-6 right-6 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="w-6 h-6" />
               </motion.button>
 
               <div className="p-8 pb-6">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Create New Session</h2>
-                <p className="text-gray-600">Generate AI-powered interview questions</p>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Create New Session</h2>
+                <p className="text-gray-600 dark:text-gray-400">Generate AI-powered interview questions</p>
               </div>
 
               <form onSubmit={handleCreateSession} className="px-8 pb-8">
                 <div className="mb-5">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Role *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Role *</label>
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
                     type="text"
@@ -824,12 +1244,12 @@ const Dashboard = () => {
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     placeholder="e.g., Frontend Developer, Data Scientist"
                     required
-                    className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3.5 border border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   />
                 </div>
 
                 <div className="mb-5">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Experience Level *
                   </label>
                   <motion.input
@@ -839,13 +1259,13 @@ const Dashboard = () => {
                     onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
                     placeholder="e.g., 2 years, 5+ years, Entry level"
                     required
-                    className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3.5 border border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   />
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Focus Areas <span className="text-gray-500">(Optional)</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Focus Areas <span className="text-gray-500 dark:text-gray-400">(Optional)</span>
                   </label>
                   <motion.input
                     whileFocus={{ scale: 1.01 }}
@@ -853,7 +1273,7 @@ const Dashboard = () => {
                     value={formData.focusAreas}
                     onChange={(e) => setFormData({ ...formData, focusAreas: e.target.value })}
                     placeholder="React, Node.js, MongoDB (comma-separated)"
-                    className="w-full px-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:bg-slate-700 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 mt-2">Separate multiple areas with commas</p>
                 </div>
@@ -863,7 +1283,7 @@ const Dashboard = () => {
                   disabled={creating}
                   whileHover={!creating ? { scale: 1.02, y: -2 } : {}}
                   whileTap={!creating ? { scale: 0.98 } : {}}
-                  className="w-full py-3.5 bg-linear-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 disabled:from-orange-400 disabled:to-orange-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 disabled:from-orange-400 disabled:to-orange-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 flex items-center justify-center gap-2"
                 >
                   {creating ? (
                     <>
@@ -880,6 +1300,154 @@ const Dashboard = () => {
                   )}
                 </motion.button>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Readiness Score Details Modal */}
+      <AnimatePresence>
+        {showScoreModal && readinessScore && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            onClick={() => setShowScoreModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white dark:bg-slate-800 z-10 border-b border-gray-200 dark:border-gray-700 px-8 py-6 rounded-t-3xl">
+                <motion.button
+                  onClick={() => setShowScoreModal(false)}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </motion.button>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Readiness Score Insights</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Detailed breakdown of your interview preparation metrics</p>
+              </div>
+
+              <div className="p-8 space-y-8">
+                {/* Current Score */}
+                <div className="text-center py-6 bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-900/20 dark:to-pink-900/20 rounded-2xl border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center justify-center gap-4">
+                    <Target className="w-8 h-8 text-orange-600" />
+                    <div>
+                      <p className="text-sm uppercase tracking-wider text-gray-600 dark:text-gray-400">Current Score</p>
+                      <p className="text-6xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                        {readinessScore.score}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white mt-4">{readinessScore.insights.level}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mt-2">{readinessScore.insights.message}</p>
+                </div>
+
+                {/* Stats Overview */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Performance Statistics</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: 'Total Sessions', value: readinessScore.stats.totalSessions },
+                      { label: 'Questions Answered', value: `${readinessScore.stats.answeredQuestions} / ${readinessScore.stats.totalQuestions}` },
+                      { label: 'Accuracy Rate', value: `${readinessScore.stats.accuracyRate}%` },
+                      { label: 'Unique Roles', value: readinessScore.stats.uniqueRoles },
+                      { label: 'Focus Areas', value: readinessScore.stats.uniqueFocusAreas },
+                      { label: 'Pinned Questions', value: readinessScore.stats.pinnedQuestions },
+                    ].map((stat) => (
+                      <div key={stat.label} className="p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-gray-700">
+                        <p className="text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400">{stat.label}</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Score Components */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Score Components</h3>
+                  <div className="space-y-6">
+                    {[
+                      { 
+                        label: 'Accuracy Score', 
+                        value: readinessScore.breakdown.accuracy, 
+                        max: 40, 
+                        color: 'from-orange-500 to-pink-500',
+                        description: 'Based on your correct answer rate and self-assessment accuracy'
+                      },
+                      { 
+                        label: 'Coverage Score', 
+                        value: readinessScore.breakdown.coverage, 
+                        max: 25, 
+                        color: 'from-pink-500 to-purple-500',
+                        description: 'Diversity of roles and focus areas you\'ve practiced'
+                      },
+                      { 
+                        label: 'Consistency Score', 
+                        value: readinessScore.breakdown.consistency, 
+                        max: 20, 
+                        color: 'from-purple-500 to-indigo-500',
+                        description: 'Regular practice habits and recent activity streak'
+                      },
+                      { 
+                        label: 'Depth Score', 
+                        value: readinessScore.breakdown.depth, 
+                        max: 15, 
+                        color: 'from-indigo-500 to-blue-500',
+                        description: 'Engagement depth through session completion and pinned questions'
+                      },
+                    ].map((metric) => (
+                      <div key={metric.label} className="p-5 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">{metric.label}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{metric.description}</p>
+                          </div>
+                          <span className="text-2xl font-bold bg-gradient-to-r {metric.color} bg-clip-text text-transparent">
+                            {metric.value}/{metric.max}
+                          </span>
+                        </div>
+                        <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full bg-gradient-to-r ${metric.color} rounded-full transition-all duration-1000`}
+                            style={{ width: `${(metric.value / metric.max) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Personalized Recommendations</h3>
+                  <div className="space-y-3">
+                    {readinessScore.insights.recommendations.map((rec, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-900/20 dark:to-pink-900/20 border border-orange-200 dark:border-orange-800"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-white text-xs font-bold">{idx + 1}</span>
+                        </div>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{rec}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

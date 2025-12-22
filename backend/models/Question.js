@@ -9,6 +9,14 @@ const questionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  userAnswer: {
+    type: String,
+    default: ''
+  },
+  isCorrect: {
+    type: Boolean,
+    default: null
+  },
   isPinned: {
     type: Boolean,
     default: false
@@ -20,6 +28,16 @@ const questionSchema = new mongoose.Schema({
   conceptExplanation: {
     type: String,
     default: ''
+  },
+  topic: {
+    type: String,
+    default: 'General',
+    index: true
+  },
+  difficulty: {
+    type: String,
+    enum: ['Easy', 'Medium', 'Hard'],
+    default: 'Medium'
   },
   createdAt: {
     type: Date,

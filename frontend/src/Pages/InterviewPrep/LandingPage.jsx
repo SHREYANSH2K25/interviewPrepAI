@@ -1,10 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, Target, BookOpen, Pin, Lightbulb, Save } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Zap,
+  Shield,
+  Globe2,
+  BookOpen,
+  Layers,
+  Target,
+  Pin,
+  Lightbulb,
+  Save,
+  Sparkles,
+} from 'lucide-react';
 import { useUser } from '../../context/userContext';
 import Login from '../Auth/Login';;
 import SignUp from '../Auth/SignUp';
+import ThemeToggle from '../../components/ThemeToggle';
+import Navbar from '../../components/Navbar';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -17,6 +33,13 @@ const LandingPage = () => {
       navigate('/dashboard');
     } else {
       setShowLogin(true);
+    }
+  };
+
+  const scrollToFeatures = () => {
+    const section = document.getElementById('features');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -53,154 +76,227 @@ const LandingPage = () => {
     },
   ];
 
+  const stats = [
+    { value: '12k+', label: 'AI-curated questions' },
+    { value: '4x', label: 'Faster prep cycles' },
+    { value: '98%', label: 'Confidence boost' },
+  ];
+
+  const workflow = [
+    {
+      icon: <Layers className="w-5 h-5 text-orange-600" />,
+      title: 'Choose your lane',
+      description: 'Select role, experience level, and the focus areas you want to sharpen.',
+    },
+    {
+      icon: <Sparkles className="w-5 h-5 text-indigo-600" />,
+      title: 'Let AI curate',
+      description: 'Generate interview-ready sessions with expandable answers and concept explainers.',
+    },
+    {
+      icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />,
+      title: 'Track and refine',
+      description: 'Pin tricky questions, add notes, and watch your stats climb in real time.',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50">
-      {/* Navbar */}
-      <motion.nav
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm"
-      >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <motion.div
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Sparkles className="w-6 h-6 text-orange-600" />
-            <h1 className="text-2xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Interview Prep AI
-            </h1>
-          </motion.div>
-          <motion.button
-            onClick={() => isAuthenticated ? navigate('/dashboard') : setShowLogin(true)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-6 py-2.5 bg-linear-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-full transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40"
-          >
-            {isAuthenticated ? 'Dashboard' : 'Login / Sign Up'}
-          </motion.button>
-        </div>
-      </motion.nav>
+    <div className="min-h-screen relative overflow-hidden text-slate-900 dark:text-slate-100">
+      <div className="absolute inset-0 -z-10 opacity-70">
+        <div className="absolute w-96 h-96 bg-orange-400/25 blur-3xl rounded-full -top-12 -left-16" />
+        <div className="absolute w-96 h-96 bg-indigo-400/20 blur-3xl rounded-full top-20 right-0" />
+        <div className="absolute w-64 h-64 bg-emerald-400/16 blur-3xl rounded-full bottom-0 left-1/3" />
+      </div>
+      <Navbar>
+        <ThemeToggle />
+        <motion.button
+          onClick={() => (isAuthenticated ? navigate('/dashboard') : setShowLogin(true))}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+          className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-medium rounded-full transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40"
+        >
+          {isAuthenticated ? 'Dashboard' : 'Login / Sign Up'}
+        </motion.button>
+      </Navbar>
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-linear-to-r from-orange-100 to-orange-50 text-orange-700 rounded-full text-sm font-medium mb-6 border border-orange-200/50 shadow-sm"
-          >
-            <Sparkles className="w-4 h-4" />
-            AI Powered
-          </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight"
-          >
-            Ace Interviews with
-            <br />
-            <span className="bg-linear-to-r from-orange-600 via-orange-500 to-orange-600 bg-clip-text text-transparent">
-              AI-Powered
-            </span>{' '}
-            Learning
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed"
-          >
-            Get role-specific questions, expand answers when you need them, dive deeper into
-            concepts, and organize everything your way. From preparation to mastery — your ultimate
-            interview toolkit is here.
-          </motion.p>
-          <motion.button
-            onClick={handleGetStarted}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="px-8 py-4 bg-linear-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white font-semibold rounded-full text-lg transition-all duration-300 shadow-2xl shadow-gray-900/30 hover:shadow-gray-900/50"
-          >
-            Get Started
-          </motion.button>
-        </div>
+        <div className="grid gap-12 lg:grid-cols-[1.05fr,0.95fr] items-center">
+          <div className="text-left px-6 py-10 bg-white/90 dark:bg-slate-900/60 rounded-[32px] border border-white/70 dark:border-white/10 shadow-[0_25px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-50 text-orange-700 rounded-full text-sm font-medium mb-6 border border-orange-200/50 shadow-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              Smarter interview prep
+            </motion.div>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-slate-50 mb-6 leading-tight hero-glow drop-shadow-[0_12px_35px_rgba(15,23,42,0.15)]"
+            >
+              Ace every interview with
+              <span className="text-orange-600 dark:text-orange-200"> guided AI practice</span>
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-lg md:text-xl text-gray-800 dark:text-slate-100 mb-8 max-w-2xl leading-relaxed"
+            >
+              Generate personalized question sets, expand answers only when you are ready, and capture
+              insights that stick. Interview Prep AI keeps light and dark modes perfectly balanced so your focus stays on learning.
+            </motion.p>
+            <div className="flex flex-wrap gap-4">
+              <motion.button
+                onClick={handleGetStarted}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 btn-primary text-white font-semibold rounded-full text-lg transition-all duration-300 shadow-2xl"
+              >
+                Get Started
+              </motion.button>
+              <motion.button
+                onClick={scrollToFeatures}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 rounded-full border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white font-semibold text-lg bg-white/70 dark:bg-slate-900/40 shadow-sm flex items-center gap-2"
+              >
+                Explore the flow
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-10 pt-6 border-t border-gray-200/80 dark:border-white/10">
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                  className="rounded-2xl p-4 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800 dark:to-slate-900 border border-gray-200/80 dark:border-white/10 shadow-sm"
+                >
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{stat.label}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
 
-        {/* Screenshot Preview */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="relative"
-        >
-          <div className="absolute inset-0 bg-linear-to-r from-orange-400 to-orange-600 rounded-3xl blur-3xl opacity-20 animate-pulse"></div>
-          <motion.div
-            whileHover={{ y: -8 }}
-            transition={{ duration: 0.3 }}
-            className="relative bg-white rounded-3xl shadow-2xl border border-gray-200/80 overflow-hidden"
-          >
-            <div className="bg-linear-to-br from-orange-50 to-white p-8 md:p-12">
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200/80 p-6 md:p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-orange-100 to-orange-50 flex items-center justify-center ring-2 ring-orange-200/50">
-                    <span className="text-xl font-bold bg-linear-to-br from-orange-600 to-orange-700 bg-clip-text text-transparent">
-                      FD
-                    </span>
-                  </div>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-transparent to-indigo-500/20 blur-3xl rounded-3xl" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="relative bg-gradient-to-br from-slate-900 via-slate-900/90 to-indigo-950 rounded-[32px] border border-white/10 shadow-[0_35px_120px_rgba(15,23,42,0.55)] text-white overflow-hidden"
+            >
+              <div className="p-8 space-y-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-gray-900">Frontend Developer</h3>
-                    <p className="text-sm text-gray-600">
-                      React.js, DOM manipulation, CSS Flexbox
-                    </p>
+                    <p className="text-sm text-white/70">Active Session</p>
+                    <h3 className="text-2xl font-semibold">Frontend Developer</h3>
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-white/10 text-xs uppercase tracking-[0.2em]">
+                    Live
                   </div>
                 </div>
+
                 <div className="space-y-4">
-                  <motion.div
-                    whileHover={{ scale: 1.01, x: 4 }}
-                    className="p-4 bg-linear-to-br from-gray-50 to-white rounded-xl border border-gray-200/80 hover:border-orange-200 hover:shadow-md transition-all duration-200 cursor-pointer"
-                  >
-                    <p className="font-medium text-gray-900 mb-2">
-                      What is JSX? Explain its role in React.
-                    </p>
-                    <button className="text-sm text-orange-600 font-medium hover:text-orange-700 transition-colors">
-                      Learn More →
-                    </button>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.01, x: 4 }}
-                    className="p-4 bg-linear-to-br from-gray-50 to-white rounded-xl border border-gray-200/80 hover:border-orange-200 hover:shadow-md transition-all duration-200 cursor-pointer"
-                  >
-                    <p className="font-medium text-gray-900 mb-2">
-                      Explain the concept of event handling in React.
-                    </p>
-                    <button className="text-sm text-orange-600 font-medium hover:text-orange-700 transition-colors">
-                      Learn More →
-                    </button>
-                  </motion.div>
+                  {["How does the virtual DOM boost performance?", "Explain event delegation in React."]
+                    .map((question, idx) => (
+                      <motion.div
+                        key={question}
+                        whileHover={{ translateX: 4 }}
+                        className="p-4 rounded-2xl bg-white/5 border border-white/10"
+                      >
+                        <p className="text-sm text-white/80">Question {idx + 1}</p>
+                        <p className="font-semibold">{question}</p>
+                        <button className="mt-3 inline-flex items-center gap-2 text-sm text-orange-200 hover:text-white transition-colors">
+                          Reveal answer
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </motion.div>
+                    ))}
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <p className="text-xs text-white/60">Focus areas</p>
+                    <div className="mt-3 space-y-2 text-sm">
+                      {['React.js', 'DOM', 'CSS'].map((item) => (
+                        <div key={item} className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-orange-300" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <p className="text-xs text-white/60">Confidence meter</p>
+                    <div className="mt-4 h-2 rounded-full bg-white/10">
+                      <div className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-emerald-300" style={{ width: '78%' }} />
+                    </div>
+                    <p className="mt-3 text-sm text-white/80">Session accuracy: 78%</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        </motion.div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="absolute -bottom-10 left-6 w-full max-w-xs p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-white/10 shadow-2xl"
+            >
+              <p className="text-xs uppercase tracking-[0.18em] text-gray-500 dark:text-gray-300">
+                Study streak
+              </p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">12 days</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Consistent preparation unlocks pro tips.</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20, y: -10 }}
+              animate={{ opacity: 1, x: 0, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="absolute -top-6 right-0 px-5 py-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-gray-200/80 dark:border-white/10 shadow-lg flex items-center gap-3 backdrop-blur"
+            >
+              <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-semibold">
+                4.8
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">⭐ Interview readiness</p>
+                <p className="text-base font-semibold text-gray-900 dark:text-white">Trusted by 18k+</p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
+      <section id="features" className="max-w-7xl mx-auto px-6 py-20">
         <motion.h3
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-4xl md:text-5xl font-bold text-center text-gray-900 mb-16"
+          className="text-4xl md:text-5xl font-bold text-center text-slate-900 dark:text-slate-50 drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)] mb-16"
         >
           Features That Make You Shine
         </motion.h3>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-center text-lg text-slate-700 dark:text-slate-200 max-w-3xl mx-auto mb-12"
+        >
+          Every pixel is tuned for clarity in both modes. Cards, tooltips, and inputs inherit the
+          new foreground tokens so your eyes never fight low contrast again.
+        </motion.p>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <motion.div
@@ -210,19 +306,80 @@ const LandingPage = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -8, scale: 1.02 }}
-              className="p-8 bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:border-orange-200/50 transition-all duration-300 group"
+              className="p-8 rounded-2xl border border-gray-200/80 dark:border-white/10 hover:border-orange-200/80 transition-all duration-300 group bg-white/95 dark:bg-slate-900/70 shadow-lg shadow-gray-200/50 dark:shadow-black/40"
             >
               <motion.div
                 whileHover={{ rotate: 5, scale: 1.1 }}
                 transition={{ duration: 0.3 }}
-                className="w-16 h-16 bg-linear-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:shadow-lg group-hover:shadow-orange-500/20 transition-shadow duration-300"
+                className="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center text-orange-600 mb-6 group-hover:shadow-lg group-hover:shadow-orange-500/20 transition-shadow duration-300"
               >
                 {feature.icon}
               </motion.div>
-              <h4 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h4>
-              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+              <h4 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-3">
+                {feature.title}
+              </h4>
+              <p className="text-slate-800 dark:text-slate-200 leading-relaxed">
+                {feature.description}
+              </p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Workflow Section */}
+      <section className="max-w-7xl mx-auto px-6 py-16">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr,1.1fr] items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="p-10 rounded-[32px] bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-[0_35px_80px_rgba(234,88,12,0.35)]"
+          >
+            <p className="uppercase text-xs tracking-[0.4em] text-white/70 mb-4">How it works</p>
+            <h3 className="text-3xl font-bold mb-4">From idea to interview-ready in minutes</h3>
+            <p className="text-white/90 text-lg mb-6">
+              Launch a focused session, follow guided study flows, and keep your wins synced across the web app.
+            </p>
+            <div className="space-y-3 text-white/90 text-sm">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5" />
+                Zero-guessing interface with clear hierarchy
+              </div>
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5" />
+                Secure cloud saves powered by proven auth
+              </div>
+              <div className="flex items-center gap-3">
+                <Globe2 className="w-5 h-5" />
+                Works anywhere, any time-zone
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="grid gap-4"
+          >
+            {workflow.map((step, idx) => (
+              <div
+                key={step.title}
+                className="flex gap-4 p-5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-slate-900/60 shadow-sm"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-white/10 flex items-center justify-center">
+                  {step.icon}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-orange-600">Step {idx + 1}</p>
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white">{step.title}</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-200">{step.description}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
@@ -234,9 +391,9 @@ const LandingPage = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
           whileHover={{ scale: 1.01 }}
-          className="bg-linear-to-br from-orange-600 via-orange-600 to-orange-700 rounded-3xl p-12 md:p-16 text-center shadow-2xl shadow-orange-500/30 relative overflow-hidden"
+          className="bg-gradient-to-br from-orange-600 via-orange-600 to-orange-700 rounded-3xl p-12 md:p-16 text-center shadow-2xl shadow-orange-500/30 relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-linear-to-br from-white/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
           <div className="relative z-10">
             <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
               Ready to Ace Your Next Interview?
@@ -244,13 +401,23 @@ const LandingPage = () => {
             <p className="text-lg md:text-xl text-orange-100 mb-8 max-w-2xl mx-auto">
               Join thousands of developers preparing smarter with AI-powered interview prep
             </p>
+            <div className="grid sm:grid-cols-2 gap-4 text-left text-orange-50 mb-8">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Live stats, streaks, and concept explainers</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Zap className="w-5 h-5" />
+                <span>Lightning-fast workflows tuned for any role</span>
+              </div>
+            </div>
             <motion.button
               onClick={handleGetStarted}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 bg-white text-orange-600 font-semibold rounded-full text-lg hover:shadow-2xl transition-all duration-300 shadow-xl"
+              className="group px-8 py-4 bg-white/95 rounded-full text-lg font-semibold hover:shadow-2xl transition-all duration-300 shadow-xl border border-white/70"
             >
-              Start Learning Now
+              <span className="text-orange-600 group-hover:text-orange-700 transition-colors">Start Learning Now</span>
             </motion.button>
           </div>
         </motion.div>

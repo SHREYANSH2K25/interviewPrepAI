@@ -1,5 +1,4 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport.js';
@@ -9,6 +8,8 @@ import sessionRoutes from './routes/session.routes.js';
 import questionRoutes from './routes/question.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
+import mistakeRoutes from './routes/mistake.routes.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,9 +17,6 @@ import { fileURLToPath } from 'url';
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Load environment variables
-dotenv.config();
 
 // Initialize Express app
 const app = express();
@@ -66,6 +64,8 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/mistakes', mistakeRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {

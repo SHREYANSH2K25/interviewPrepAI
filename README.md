@@ -9,14 +9,38 @@ An AI-powered interview preparation platform that generates role-specific techni
 
 ## ✨ Features
 
-- 🤖 **AI-Powered Questions** - Generate role-specific interview questions using Google Gemini AI
-- 📚 **Session Management** - Organize questions by role, experience level, and focus areas
-- 📌 **Pin Important Questions** - Mark and prioritize key questions for quick review
-- 💡 **Concept Explanations** - Get detailed AI-generated explanations for any concept
-- 🎨 **Modern UI** - Clean, responsive interface with Tailwind CSS
-- 🔒 **Secure Authentication** - JWT-based auth with bcrypt password hashing
-- ☁️ **Cloud Storage** - Profile images stored securely on Cloudinary
-- 📝 **Markdown Support** - Rich text rendering with syntax highlighting
+### Intelligence & Content
+- 🤖 **AI question lab** – Generate role, experience, and focus-area specific question sets powered by Google Gemini, with instant follow-up prompts.
+- 💡 **On-demand concept explainers** – Trigger AI explanations, hints, and study tips per question without leaving the workspace.
+- 📝 **Rich markdown answers** – Render formatted answers with code blocks, syntax highlighting, and inline callouts for quick scanning.
+- 🎯 **Intelligent evaluation** – AI analyzes your answers, identifies strengths/weaknesses, and provides actionable feedback.
+
+### Study Workflow
+- 📚 **Session backlog** – Create unlimited sessions, reorder, and resume drafts with saved context.
+- 📌 **Pin + note taking** – Pin tricky prompts, attach personal notes, and highlight key learnings for each question.
+- ✍️ **Answer submission** – Write your answers in markdown, submit them for instant AI evaluation.
+- 🤖 **AI-powered grading** – Google Gemini evaluates your answers, providing score (0-100), feedback, strengths, and improvement areas.
+- 📊 **Readiness score** – Intelligent 0-100 scoring based on accuracy, topic coverage, consistency, and engagement depth.
+- 🔥 **Knowledge Gap Heatmap** – Visual topic-wise strength analysis with color-coded performance metrics, radar charts, and drill-down insights.
+- 🧠 **Mistake Memory System** – Advanced spaced repetition learning that tracks conceptual mistakes using fingerprints, reintroduces weak concepts intelligently, and shows improvement trends over time.
+- 🎯 **Practice / review modes** – Toggle between guided study, streak-driven practice, and stat-heavy review layouts.
+- ⏱️ **Productivity tools** – Built-in timer, streak tracker, and accuracy stats keep prep measurable.
+
+### Experience & UI
+- 🎨 **Dual-theme design** – Purpose-built light and dark themes, glass surfaces, gradients, and responsive layouts tuned for desktop/tablet/mobile.
+- 🧊 **Interactive dashboard** – Role-themed cards, hero metrics, and quick actions for generating or resuming sessions in one click.
+- 🪟 **Profile achievements** – Unlockable badges, journey highlights, and recap panels styled for both modes.
+
+### Platform & Security
+- 🔐 **JWT authentication** – Secure auth pipeline with bcrypt hashing and protected routes.
+- ☁️ **Cloudinary storage** – Managed uploads for avatars and supporting media.
+- 📤 **RESTful API** – Modular controllers for auth, sessions, questions, and AI tasks with structured validation.
+
+### Developer Friendly
+- ⚙️ **Config-driven setup** – Environment templates, reusable Axios instance, and central API path mapping.
+- 🧩 **Componentized React app** – Context providers, Framer Motion animations, Tailwind utility patterns, and Lucide icons.
+
+> Every feature ships with parity across light/dark themes, keyboard-friendly flows, and graceful empty/loading states so the README reflects the production experience.
 
 ## 🛠️ Tech Stack
 
@@ -111,7 +135,8 @@ InterviewPrepAI/
 │   │   ├── auth.controller.js    # Authentication logic
 │   │   ├── session.controller.js # Session management
 │   │   ├── question.controller.js # Question operations
-│   │   └── ai.controller.js      # AI integrations
+│   │   ├── ai.controller.js      # AI integrations
+│   │   └── analytics.controller.js # Readiness score calculation
 │   ├── middleware/
 │   │   ├── auth.middleware.js    # JWT verification
 │   │   └── upload.middleware.js  # Multer config
@@ -123,7 +148,8 @@ InterviewPrepAI/
 │   │   ├── auth.routes.js
 │   │   ├── session.routes.js
 │   │   ├── question.routes.js
-│   │   └── ai.routes.js
+│   │   ├── ai.routes.js
+│   │   └── analytics.routes.js
 │   ├── utils/
 │   │   ├── cloudinary.js         # Image upload utilities
 │   │   └── gemini.js             # AI utilities
@@ -136,7 +162,10 @@ InterviewPrepAI/
     │   │   ├── Cards/
     │   │   ├── Inputs/
     │   │   ├── layouts/
-    │   │   └── Loader/
+    │   │   ├── Loader/
+    │   │   ├── KnowledgeGapHeatmap.jsx  # Topic strength visualization
+    │   │   ├── Navbar.jsx
+    │   │   └── ThemeToggle.jsx
     │   ├── context/
     │   │   └── userContext.jsx   # Global state management
     │   ├── Pages/
@@ -177,19 +206,39 @@ InterviewPrepAI/
 - `POST /api/questions/:sessionId` - Add question to session (protected)
 - `PATCH /api/questions/:questionId/pin` - Toggle pin status (protected)
 - `PATCH /api/questions/:questionId/notes` - Update question notes (protected)
+- `PATCH /api/questions/:questionId/answer` - Submit answer for AI evaluation (protected)
 
 ### AI
 - `POST /api/ai/generate-questions` - Generate interview questions (protected)
 - `POST /api/ai/explain-concept` - Get concept explanation (protected)
+- `POST /api/ai/evaluate-answer` - AI-powered answer evaluation (protected)
+
+### Analytics
+- `GET /api/analytics/readiness-score` - Calculate interview readiness score (protected)
+- `GET /api/analytics/knowledge-gaps` - Get knowledge gap heatmap with topic-wise strengths (protected)
+
+### Mistake Tracking (Spaced Repetition)
+- `POST /api/mistakes/record` - Record concept attempt for mistake tracking (protected)
+- `GET /api/mistakes/weak-concepts` - Get prioritized weak concepts for targeted practice (protected)
+- `GET /api/mistakes/due-for-review` - Get concepts due for review based on spaced repetition (protected)
+- `GET /api/mistakes/improvement-trends` - Get improvement trends and mastery distribution (protected)
+- `GET /api/mistakes/check-previous-struggle` - Check if concept was previously struggled with (protected)
 
 ## 🚀 Usage Flow
 
 1. **Sign Up/Login** - Create an account or login to access the platform
 2. **Create Session** - Define your target role, experience level, and focus areas
-3. **AI Generation** - System automatically generates 10 relevant interview questions
-4. **Study & Practice** - Review questions, expand answers, and pin important ones
-5. **Get Explanations** - Click "Explain Concept" for detailed AI-generated explanations
-6. **Manage Sessions** - View, delete, and organize multiple interview prep sessions
+3. **AI Generation** - System automatically generates 10 relevant interview questions with topics and difficulty levels
+4. **Answer Questions** - Write your answers in markdown format for each question
+5. **AI Evaluation** - Submit your answer for instant AI-powered grading (score, feedback, strengths, improvements)
+6. **View Results** - Get detailed feedback on what you covered well and what you missed
+7. **Compare Answers** - View the expected answer alongside your submission
+8. **Get AI Explanations** - Click "Explain Concept" for detailed AI-generated explanations
+9. **Track Progress** - Your readiness score updates automatically based on AI-evaluated accuracy
+10. **Analyze Knowledge Gaps** - View topic-wise strength heatmap to identify weak areas
+11. **Drill Down** - Click topics to see detailed statistics, difficulty breakdown, and related focus areas
+12. **Review & Improve** - Pin important questions, add notes, and revisit weak areas
+13. **Manage Sessions** - View, delete, and organize multiple interview prep sessions
 
 ## 🎨 UI Features
 

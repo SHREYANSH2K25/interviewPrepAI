@@ -1,8 +1,106 @@
 @import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
+:root {
+  color-scheme: light;
+  --bg: #fef9f4;
+  --text-primary: #0b1121;
+  --text-muted: #4b5563;
+  --card: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.12);
+  --accent: #fb7a1c;
+  --accent-strong: #f97316;
+  --foreground: #101828;
+  --foreground-dark: #f9fafb;
+  --surface-soft: rgba(255, 255, 255, 0.9);
+  --surface-strong: rgba(255, 255, 255, 0.98);
+  --surface-muted: rgba(248, 249, 255, 0.85);
+  --shadow-soft: 0 28px 80px -45px rgba(15, 23, 42, 0.35);
+  --divider: rgba(15, 23, 42, 0.08);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --bg: #0b1222;
+  --text-primary: #e5e7eb;
+  --text-muted: #9ca3af;
+  --card: rgba(15, 23, 42, 0.7);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --accent: #fb923c;
+  --accent-strong: #fb6c31;
+}
+
 * {
   font-family: 'Urbanist', system-ui, -apple-system, sans-serif;
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 180ms;
+}
+
+body {
+  background: var(--bg);
+  color: var(--foreground);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+body, #root {
+  color: var(--foreground);
+}
+
+:root:not(.dark) body,
+:root:not(.dark) #root {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 196, 148, 0.35), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(147, 197, 253, 0.35), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0)),
+    var(--bg);
+  color: var(--foreground);
+}
+
+:root.dark body,
+:root.dark #root {
+  color: var(--foreground-dark);
+}
+
+input,
+select,
+textarea {
+  color: inherit;
+}
+
+svg {
+  color: inherit;
+}
+
+svg [stroke]:not([stroke='none']) {
+  stroke: currentColor;
+}
+
+svg [fill]:not([fill='none']) {
+  fill: currentColor;
+}
+
+a {
+  color: var(--accent);
+}
+
+:root:not(.dark) input,
+:root:not(.dark) textarea,
+:root:not(.dark) select {
+  background-color: var(--surface-strong);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 22px 60px -42px rgba(15, 23, 42, 0.35);
+  color: var(--text-primary);
+}
+
+:root:not(.dark) input:focus,
+:root:not(.dark) textarea:focus,
+:root:not(.dark) select:focus {
+  border-color: rgba(249, 115, 22, 0.45);
+  box-shadow: 0 25px 60px -38px rgba(249, 115, 22, 0.35);
 }
 
 @keyframes fade-in {
@@ -28,7 +126,7 @@
 .prose h1,
 .prose h2,
 .prose h3 {
-  color: #111827;
+  color: var(--text-primary);
   font-weight: 700;
   margin-top: 1.5em;
   margin-bottom: 0.5em;
@@ -38,10 +136,11 @@
   margin-top: 1em;
   margin-bottom: 1em;
   line-height: 1.75;
+  color: var(--text-muted);
 }
 
 .prose code {
-  background-color: #f3f4f6;
+  background-color: rgba(148, 163, 184, 0.14);
   padding: 0.2em 0.4em;
   border-radius: 0.25rem;
   font-size: 0.875em;
@@ -68,11 +167,11 @@
 
 .prose strong {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .prose a {
-  color: #ea580c;
+  color: var(--accent);
   text-decoration: none;
 }
 

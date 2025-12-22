@@ -65,7 +65,7 @@ Open `backend/.env` and update:
 ```env
 GOOGLE_CLIENT_ID=your_actual_client_id_here
 GOOGLE_CLIENT_SECRET=your_actual_client_secret_here
-SESSION_SECRET=your-random-secret-key-here
+SESSION_SECRET=dkf93kdj39dkd93kd9d93kd9d
 ```
 
 **Generate a secure SESSION_SECRET** (use one of these methods):

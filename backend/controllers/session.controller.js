@@ -55,6 +55,8 @@ export const createSession = async (req, res) => {
       const question = await Question.create({
         question: q.question,
         answer: q.answer,
+        topic: q.topic || 'General',
+        difficulty: q.difficulty || 'Medium',
         isPinned: false
       });
       questionIds.push(question._id);

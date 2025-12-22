@@ -94,3 +94,35 @@ export const explainConcept = async (req, res) => {
     });
   }
 };
+
+// @desc    Evaluate user answer using AI
+// @route   POST /api/ai/evaluate-answer
+export const evaluateAnswer = async (req, res) => {
+  try {
+    const { question, expectedAnswer, userAnswer } = req.body;
+
+    // Validation
+    if (!question || !expectedAnswer || !userAnswer) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide question, expected answer, and user answer' 
+      });
+    }
+
+    // Use Gemini AI to evaluate the answer
+    const { evaluateUserAnswer } = await import('../utils/gemini.js');
+    const evaluation = await evaluateUserAnswer(question, expectedAnswer, userAnswer);
+
+    res.status(200).json({
+      success: true,
+      message: 'Answer evaluated successfully',
+      evaluation
+    });
+  } catch (error) {
+    console.error('Evaluate answer error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Server error evaluating answer' 
+    });
+  }
+};

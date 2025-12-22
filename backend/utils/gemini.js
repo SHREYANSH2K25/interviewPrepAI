@@ -25,9 +25,11 @@ Requirements:
 1. Questions should be role-specific and appropriate for the experience level
 2. Include a mix of conceptual, practical, and scenario-based questions
 3. Provide comprehensive answers (150-300 words each)
-4. Format as JSON array with this structure: [{"question": "...", "answer": "..."}]
-5. Make questions challenging but fair for the experience level
-6. Include code examples in answers where relevant
+4. Assign a specific topic/category for each question (e.g., "JavaScript", "Algorithms", "System Design", "Databases", etc.)
+5. Assign a difficulty level (Easy, Medium, or Hard) based on experience level
+6. Format as JSON array with this structure: [{"question": "...", "answer": "...", "topic": "...", "difficulty": "..."}]
+7. Make questions challenging but fair for the experience level
+8. Include code examples in answers where relevant
 
 Generate the questions now:`;
 
@@ -42,7 +44,14 @@ Generate the questions now:`;
     }
 
     const questions = JSON.parse(jsonMatch[0]);
-    return questions;
+    
+    // Ensure all questions have topic and difficulty fields
+    return questions.map(q => ({
+      question: q.question,
+      answer: q.answer,
+      topic: q.topic || 'General',
+      difficulty: q.difficulty || 'Medium'
+    }));
   } catch (error) {
     console.error('Gemini API error:', error);
     throw new Error('Failed to generate interview questions');
@@ -117,6 +126,95 @@ When answering similar questions:
 *Note: This is a generated fallback explanation. For AI-powered detailed explanations, please ensure the AI service is properly configured.*`;
 
     return fallbackExplanation;
+  }
+};
+
+export const evaluateUserAnswer = async (question, expectedAnswer, userAnswer) => {
+  try {
+    // Check if API key is configured
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('AI service not configured');
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const prompt = `You are an experienced technical interviewer. Evaluate the candidate's answer to this interview question.
+
+Question: "${question}"
+
+Expected/Model Answer: "${expectedAnswer}"
+
+Candidate's Answer: "${userAnswer}"
+
+Please evaluate the candidate's answer and respond in this EXACT JSON format (no markdown, no code blocks):
+{
+  "isCorrect": true or false,
+  "score": number between 0-100,
+  "feedback": "detailed feedback explaining what was good and what could be improved",
+  "strengths": ["strength 1", "strength 2"],
+  "improvements": ["improvement 1", "improvement 2"],
+  "keyPointsCovered": ["point 1", "point 2"],
+  "keyPointsMissed": ["point 1", "point 2"]
+}
+
+Evaluation criteria:
+- Correctness: Does the answer demonstrate understanding of core concepts?
+- Completeness: Are all key points covered?
+- Clarity: Is the explanation clear and well-structured?
+- Accuracy: Are there any technical errors?
+
+Be fair but thorough. A score of 70+ indicates a passing answer. Return ONLY the JSON, nothing else.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let text = response.text().trim();
+
+    // Remove markdown code block formatting if present
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Failed to parse evaluation from AI response');
+    }
+
+    const evaluation = JSON.parse(jsonMatch[0]);
+    
+    // Ensure all required fields are present
+    if (!evaluation.hasOwnProperty('isCorrect') || !evaluation.hasOwnProperty('score')) {
+      throw new Error('Invalid evaluation format');
+    }
+
+    return evaluation;
+  } catch (error) {
+    console.error('Gemini evaluation error:', error);
+    
+    // Fallback to basic keyword matching
+    const userLower = userAnswer.toLowerCase();
+    const expectedLower = expectedAnswer.toLowerCase();
+    
+    // Extract key technical terms from expected answer
+    const technicalTerms = expectedLower.match(/\b[a-z]{4,}\b/g) || [];
+    const matchedTerms = technicalTerms.filter(term => userLower.includes(term));
+    const matchPercentage = technicalTerms.length > 0 
+      ? (matchedTerms.length / technicalTerms.length) * 100 
+      : 0;
+    
+    const isCorrect = matchPercentage >= 50;
+    const score = Math.min(Math.round(matchPercentage), 100);
+
+    return {
+      isCorrect,
+      score,
+      feedback: isCorrect 
+        ? `Your answer covers the main concepts. You mentioned ${matchedTerms.length} out of ${technicalTerms.length} key technical terms. Consider elaborating more on the details.`
+        : `Your answer needs improvement. You only covered ${matchedTerms.length} out of ${technicalTerms.length} key concepts. Review the expected answer and try to include more specific technical details.`,
+      strengths: isCorrect ? ['Covered main concepts', 'Shows basic understanding'] : ['Attempted the question'],
+      improvements: ['Add more technical depth', 'Include specific examples', 'Explain implementation details'],
+      keyPointsCovered: matchedTerms.slice(0, 3),
+      keyPointsMissed: technicalTerms.filter(t => !matchedTerms.includes(t)).slice(0, 3),
+      note: 'AI evaluation unavailable - using basic keyword matching'
+    };
   }
 };
 

@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useUser } from '../../context/userContext';
+import axiosInstance from '../../utils/axiosInstance';
+import OTPVerification from './OTPVerification';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -15,7 +17,8 @@ const GoogleIcon = () => (
 
 const Login = ({ onClose, onSwitchToSignup }) => {
   const navigate = useNavigate();
-  const { login } = useUser();
+  const { login, setUser, setIsAuthenticated } = useUser();
+  const googleButtonRef = useRef(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,21 +26,90 @@ const Login = ({ onClose, onSwitchToSignup }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+
+  useEffect(() => {
+    // Initialize Google Sign-In
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+      });
+
+      if (googleButtonRef.current) {
+        window.google.accounts.id.renderButton(
+          googleButtonRef.current,
+          {
+            theme: 'outline',
+            size: 'large',
+            width: googleButtonRef.current.offsetWidth,
+            text: 'signin_with',
+          }
+        );
+      }
+    }
+  }, []);
+
+  const handleGoogleResponse = async (response) => {
+    try {
+      setLoading(true);
+      // Send the credential to your backend
+      const res = await axiosInstance.post('/auth/google/callback', {
+        credential: response.credential,
+      });
+
+      if (res.data.success) {
+        const { token, user } = res.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+        setIsAuthenticated(true);
+        onClose();
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      setError(error.response?.data?.message || 'Google login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const result = await login(formData.email, formData.password);
+    try {
+      const response = await axiosInstance.post('/auth/login', {
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (result.success) {
-      onClose();
-      navigate('/dashboard');
-    } else {
-      setError(result.message);
+      if (response.data.success) {
+        // Check if email verification is needed
+        if (response.data.needsVerification) {
+          setUnverifiedEmail(formData.email);
+          setShowOTPVerification(true);
+          setLoading(false);
+          return;
+        }
+
+        // Successful login
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+        setIsAuthenticated(true);
+        onClose();
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleChange = (e) => {
@@ -45,27 +117,33 @@ const Login = ({ onClose, onSwitchToSignup }) => {
     setError('');
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-linear-to-br from-orange-50/30 to-transparent pointer-events-none"></div>
+    <>
+      {showOTPVerification && (
+        <OTPVerification
+          onClose={onClose}
+          email={unverifiedEmail}
+          onSwitchToLogin={() => setShowOTPVerification(false)}
+        />
+      )}
+
+      {!showOTPVerification && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="glass-card bg-white/95 dark:bg-slate-900/90 text-gray-900 dark:text-slate-100 rounded-3xl w-full max-w-md relative overflow-hidden"
+          >
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/30 to-transparent dark:from-slate-800/50 dark:to-slate-900/10 pointer-events-none"></div>
 
         <motion.button
           onClick={onClose}
@@ -115,9 +193,9 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             transition={{ delay: 0.2 }}
             className="mb-5"
           >
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type="email"
@@ -126,7 +204,7 @@ const Login = ({ onClose, onSwitchToSignup }) => {
                 onChange={handleChange}
                 placeholder="you@example.com"
                 required
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400"
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-300 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 dark:hover:border-slate-500 text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-400 bg-white dark:bg-slate-800"
               />
             </div>
           </motion.div>
@@ -137,9 +215,9 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             transition={{ delay: 0.25 }}
             className="mb-6"
           >
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Password</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type={showPassword ? 'text' : 'password'}
@@ -148,14 +226,14 @@ const Login = ({ onClose, onSwitchToSignup }) => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
-                className="w-full pl-12 pr-12 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400"
+                className="w-full pl-12 pr-12 py-3.5 border border-gray-300 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 dark:hover:border-slate-500 text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-400 bg-white dark:bg-slate-800"
               />
               <motion.button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </motion.button>
@@ -170,7 +248,7 @@ const Login = ({ onClose, onSwitchToSignup }) => {
             transition={{ delay: 0.3 }}
             whileHover={!loading ? { scale: 1.02, y: -2 } : {}}
             whileTap={!loading ? { scale: 0.98 } : {}}
-            className="w-full py-3.5 bg-linear-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 disabled:from-orange-400 disabled:to-orange-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 disabled:from-orange-400 disabled:to-orange-400 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -197,29 +275,23 @@ const Login = ({ onClose, onSwitchToSignup }) => {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or continue with</span>
+              <span className="px-4 bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-300">Or continue with</span>
             </div>
           </motion.div>
 
-          <motion.button
-            type="button"
-            onClick={handleGoogleLogin}
+          <motion.div
+            ref={googleButtonRef}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3.5 bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-3"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </motion.button>
+            className="w-full flex justify-center"
+          />
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.45 }}
-            className="text-center text-gray-600 mt-6"
+            className="text-center text-gray-600 dark:text-slate-300 mt-6"
           >
             Don't have an account?{' '}
             <motion.button
@@ -235,6 +307,8 @@ const Login = ({ onClose, onSwitchToSignup }) => {
         </form>
       </motion.div>
     </motion.div>
+      )}
+    </>
   );
 };
 
