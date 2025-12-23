@@ -24,16 +24,40 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// CORS Configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'https://interview-prep-ai-psi.vercel.app',
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL
+].filter(Boolean);
+
 // Middleware
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    process.env.CLIENT_URL
-  ].filter(Boolean),
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS allowed for origin:', origin);
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked origin:', origin);
+      console.log('Allowed origins:', allowedOrigins);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -71,7 +95,9 @@ app.use('/api/mistakes', mistakeRoutes);
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     success: true, 
-    message: 'Interview Prep AI Server is running!' 
+    message: 'Interview Prep AI Server is running!',
+    allowedOrigins: allowedOrigins,
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -97,6 +123,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
 });
 
 export default app;
