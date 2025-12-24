@@ -17,6 +17,17 @@ router.post('/verify-otp', verifyOTP);
 router.post('/resend-otp', resendOTP);
 
 // Google OAuth routes
+// Debug endpoint to check OAuth config
+router.get('/google/debug', (req, res) => {
+  res.json({
+    clientId: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET',
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL,
+    frontendUrl: process.env.FRONTEND_URL || process.env.CLIENT_URL,
+    nodeEnv: process.env.NODE_ENV
+  });
+});
+
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
