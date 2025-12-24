@@ -34,19 +34,6 @@ const SignUp = ({ onClose, onSwitchToLogin }) => {
   // Handle Google OAuth - Redirect to backend
   const handleGoogleSignup = () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`;
-      });
-
-      if (res.data.success) {
-        const { token, user } = res.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        setIsAuthenticated(true);
-        onClose();
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      console.error('Google signup error:', error);
   };
 
   const handleSubmit = async (e) => {
