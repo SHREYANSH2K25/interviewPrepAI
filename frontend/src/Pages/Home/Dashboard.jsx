@@ -301,7 +301,7 @@ export const defaultSessions = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useUser();
+  const { user, logout, isAuthenticated, loading: userLoading } = useUser();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -317,6 +317,9 @@ const Dashboard = () => {
   const [showKnowledgeGaps, setShowKnowledgeGaps] = useState(false);
 
   useEffect(() => {
+    // Wait for user context to finish loading before checking authentication
+    if (userLoading) return;
+    
     if (!isAuthenticated) {
       navigate('/');
       return;
@@ -324,7 +327,7 @@ const Dashboard = () => {
     fetchSessions();
     fetchReadinessScore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, userLoading]);
 
   // Refresh score when returning to dashboard (e.g., from InterviewPrep)
   useEffect(() => {

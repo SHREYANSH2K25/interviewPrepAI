@@ -18,16 +18,18 @@ const AuthCallback = () => {
         const userStr = atob(userBase64);
         const user = JSON.parse(userStr);
         
-        // Store in localStorage
+        // Store in localStorage FIRST
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
         
-        // Update context
+        // Update context state
         setUser(user);
         setIsAuthenticated(true);
         
-        // Redirect to dashboard
-        navigate('/dashboard');
+        // Use setTimeout to ensure state updates are processed before navigation
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 100);
       } catch (error) {
         console.error('Auth callback error:', error);
         navigate('/?error=auth_failed');
