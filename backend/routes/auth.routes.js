@@ -22,7 +22,7 @@ router.get('/google',
 );
 
 router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${process.env.CLIENT_URL}?error=google_auth_failed` }),
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL || process.env.CLIENT_URL}?error=google_auth_failed` }),
   (req, res) => {
     try {
       // Generate JWT token
@@ -38,11 +38,12 @@ router.get('/google/callback',
       };
 
       // Redirect to frontend with token and user data
-      const redirectUrl = `${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google callback error:', error);
-      res.redirect(`${process.env.CLIENT_URL}?error=auth_failed`);
+      res.redirect(`${process.env.FRONTEND_URL || process.env.CLIENT_URL}?error=auth_failed`);
     }
   }
 );

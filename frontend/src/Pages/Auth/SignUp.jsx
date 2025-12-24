@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useUser } from '../../context/userContext';
 import axiosInstance from '../../utils/axiosInstance';
 import OTPVerification from './OTPVerification';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -18,7 +20,6 @@ const GoogleIcon = () => (
 const SignUp = ({ onClose, onSwitchToLogin }) => {
   const navigate = useNavigate();
   const { signup, setUser, setIsAuthenticated } = useUser();
-  const googleButtonRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -30,34 +31,9 @@ const SignUp = ({ onClose, onSwitchToLogin }) => {
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
 
-  useEffect(() => {
-    // Initialize Google Sign-In
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-      });
-
-      if (googleButtonRef.current) {
-        window.google.accounts.id.renderButton(
-          googleButtonRef.current,
-          {
-            theme: 'outline',
-            size: 'large',
-            width: googleButtonRef.current.offsetWidth,
-            text: 'signup_with',
-          }
-        );
-      }
-    }
-  }, []);
-
-  const handleGoogleResponse = async (response) => {
-    try {
-      setLoading(true);
-      // Send the credential to your backend
-      const res = await axiosInstance.post('/auth/google/callback', {
-        credential: response.credential,
+  // Handle Google OAuth - Redirect to backend
+  const handleGoogleSignup = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
       });
 
       if (res.data.success) {
@@ -71,10 +47,6 @@ const SignUp = ({ onClose, onSwitchToLogin }) => {
       }
     } catch (error) {
       console.error('Google signup error:', error);
-      setError(error.response?.data?.message || 'Google signup failed');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -298,13 +270,19 @@ const SignUp = ({ onClose, onSwitchToLogin }) => {
             </div>
           </motion.div>
 
-          <motion.div
-            ref={googleButtonRef}
+          <motion.button
+            type="button"
+            onClick={handleGoogleSignup}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
-            className="w-full flex justify-center"
-          />
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3.5 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500 text-gray-700 dark:text-slate-200 font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-3"
+          >
+            <GoogleIcon />
+            Sign up with Google
+          </motion.button>
 
           <motion.p
             initial={{ opacity: 0 }}
