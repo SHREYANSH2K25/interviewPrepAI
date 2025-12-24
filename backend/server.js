@@ -24,14 +24,13 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// CORS Configuration
+// CORS Configuration (FIXED)
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
-  'https://interview-prep-ai-psi.vercel.app',
-  process.env.FRONTEND_URL,
-  process.env.CLIENT_URL
+  'https://interview-prep-ai-git-main-shreyansh-jains-projects-096182b5.vercel.app',
+  process.env.FRONTEND_URL
 ].filter(Boolean);
 
 // Middleware
