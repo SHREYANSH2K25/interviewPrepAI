@@ -18,6 +18,7 @@ export const UserProvider = ({ children }) => {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
         setIsAuthenticated(true);
+        // Only fetch profile to refresh data, don't logout on error
         fetchUserProfile();
       } catch (error) {
         console.error('Failed to parse saved user:', error);
@@ -39,7 +40,11 @@ export const UserProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      logout();
+      // Only logout on 401 (unauthorized) errors, not on network errors
+      if (error.response?.status === 401) {
+        logout();
+      }
+      // For other errors (network issues, 500, etc), keep user logged in with cached data
     } finally {
       setLoading(false);
     }
