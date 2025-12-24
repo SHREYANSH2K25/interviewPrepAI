@@ -2,6 +2,8 @@
 
 An AI-powered interview preparation platform that generates role-specific technical questions and provides intelligent explanations to help you ace your interviews.
 
+🚀 **Live Demo:** [https://interview-prep-ai-psi.vercel.app/](https://interview-prep-ai-psi.vercel.app/)
+
 ![React](https://img.shields.io/badge/React-19.2.0-blue)
 ![Node.js](https://img.shields.io/badge/Node.js-Express-green)
 ![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen)
