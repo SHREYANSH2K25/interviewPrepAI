@@ -54,9 +54,9 @@ router.get(
         profileImage: req.user.profileImage,
       };
 
-      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${encodeURIComponent(
-        JSON.stringify(user)
-      )}`;
+      // Use base64 encoding instead of encodeURIComponent to avoid URL parsing issues
+      const userBase64 = Buffer.from(JSON.stringify(user)).toString('base64');
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${userBase64}`;
 
       return res.redirect(redirectUrl);
     } catch (err) {

@@ -10,11 +10,13 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const token = searchParams.get('token');
-    const userStr = searchParams.get('user');
+    const userBase64 = searchParams.get('user');
 
-    if (token && userStr) {
+    if (token && userBase64) {
       try {
-        const user = JSON.parse(decodeURIComponent(userStr));
+        // Decode base64 user data
+        const userStr = atob(userBase64);
+        const user = JSON.parse(userStr);
         
         // Store in localStorage
         localStorage.setItem('token', token);
