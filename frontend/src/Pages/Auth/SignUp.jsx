@@ -6,7 +6,7 @@ import { useUser } from '../../context/userContext';
 import axiosInstance from '../../utils/axiosInstance';
 import OTPVerification from './OTPVerification';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace('/api', '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
