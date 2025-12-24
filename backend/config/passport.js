@@ -12,36 +12,41 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user already exists
-        let user = await User.findOne({ email: profile.emails[0].value });
+        const email = profile.emails?.[0]?.value;
+
+        if (!email) {
+          return done(new Error('No email found from Google'), null);
+        }
+
+        let user = await User.findOne({ email });
 
         if (user) {
-          // User exists, update Google info if needed
           if (!user.googleId) {
             user.googleId = profile.id;
-            user.profileImage = profile.photos[0]?.value;
+            user.profileImage = profile.photos?.[0]?.value;
             await user.save();
           }
           return done(null, user);
         }
 
-        // Create new user
         user = await User.create({
           googleId: profile.id,
           name: profile.displayName,
-          email: profile.emails[0].value,
-          profileImage: profile.photos[0]?.value,
-          password: 'google-oauth-' + Math.random().toString(36), // Random password for Google users
+          email,
+          profileImage: profile.photos?.[0]?.value,
+          isEmailVerified: true,
+          password: 'google-oauth-' + Math.random().toString(36),
         });
 
-        done(null, user);
-      } catch (error) {
-        done(error, null);
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
       }
     }
   )
 );
 
+// Even though session is disabled later, passport requires these
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
@@ -50,8 +55,8 @@ passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
     done(null, user);
-  } catch (error) {
-    done(error, null);
+  } catch (err) {
+    done(err, null);
   }
 });
 
